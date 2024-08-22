@@ -4,7 +4,7 @@ import { pool } from '../database'
 async function getCartItems(req: Request, res: Response) {
   const { id } = req.user
   try {
-    const products = await pool.query('SELECT p.title, p.image_path, p.stock, c.quantity FROM products p LEFT JOIN cart c USING (product_id) WHERE c.user_id = $1', [id])
+    const products = await pool.query('SELECT p.title, p.price, p.image_path, p.stock, c.quantity FROM products p LEFT JOIN cart c USING (product_id) WHERE c.user_id = $1', [id])
     res.status(200).json(products.rows)
   } catch (error) {
     if (error instanceof Error)

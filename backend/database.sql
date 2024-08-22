@@ -51,3 +51,16 @@ CREATE TABLE IF NOT EXISTS cart (
   user_id uuid REFERENCES users ON DELETE CASCADE
 );
 
+CREATE TABLE order_items (
+  items_id SERIAL PRIMARY KEY,
+  total NUMERIC(8, 2) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  cart_id INT REFERENCES cart(cart_id) ON DELETE CASCADE,
+  buyer_id uuid REFERENCES users(user_id) ON DELETE CASCADE,
+  seller_id uuid REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+ALTER TABLE order_items
+ADD COLUMN quantity INT NOT NULL,
+ADD COLUMN status VARCHAR(100) DEFAULT 'pending' NOT NULL;

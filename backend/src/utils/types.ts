@@ -3,6 +3,11 @@ type PayloadType = {
   username: string
 }
 
+interface OrderStatusType {
+  status: 'pending' | 'to ship' | 'delivered'
+}
+
 export {
-  PayloadType
+  PayloadType,
+  OrderStatusType,
 }
