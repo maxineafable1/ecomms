@@ -90,7 +90,7 @@ async function deleteUser(req: Request, res: Response) {
   const { id } = req.user
   const userToDelete = await pool.query('DELETE FROM users WHERE user_id = $1', [id])
   if (userToDelete.rowCount === 0)
-    return res.sendStatus(400)
+    return res.sendStatus(404)
   res.sendStatus(204)
 }
 
@@ -122,10 +122,19 @@ async function getNewAccessToken(req: Request, res: Response) {
   }
 }
 
+async function setUserAsSeller(req: Request, res: Response) {
+  const { id, seller } = req.user
+  const userToUpdate = await pool.query('UPDATE users SET seller = $1 WHERE user_id = $2', [!seller, id])
+  if (userToUpdate.rowCount === 0)
+    return res.sendStatus(404)
+  res.sendStatus(204)
+}
+
 export {
   login,
   signup,
   logout,
   deleteUser,
   getNewAccessToken,
+  setUserAsSeller,
 }
