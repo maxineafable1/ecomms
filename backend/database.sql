@@ -54,13 +54,28 @@ CREATE TABLE IF NOT EXISTS cart (
 CREATE TABLE order_items (
   items_id SERIAL PRIMARY KEY,
   total NUMERIC(8, 2) NOT NULL,
+  quantity INT NOT NULL,
+  method VARCHAR(100) NOT NULL,
+  status VARCHAR(100) DEFAULT 'pending' NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  cart_id INT REFERENCES cart(cart_id) ON DELETE CASCADE,
+  product_id INT REFERENCES products(product_id) ON DELETE CASCADE,
   buyer_id uuid REFERENCES users(user_id) ON DELETE CASCADE,
   seller_id uuid REFERENCES users(user_id) ON DELETE CASCADE
 );
 
-ALTER TABLE order_items
-ADD COLUMN quantity INT NOT NULL,
-ADD COLUMN status VARCHAR(100) DEFAULT 'pending' NOT NULL;
+CREATE TABLE address (
+  address_id SERIAL PRIMARY KEY,
+  house_num VARCHAR(200),
+  street VARCHAR(200),
+  barangay VARCHAR(200),
+  city VARCHAR(200),
+  province VARCHAR(200),
+  user_id uuid REFERENCES users ON DELETE CASCADE
+);
+
+CREATE TABLE payment (
+  payment_id SERIAL PRIMARY KEY,
+  method VARCHAR(100),
+  user_id uuid REFERENCES users ON DELETE CASCADE
+);

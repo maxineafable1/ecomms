@@ -5,7 +5,7 @@ import { seller } from '../middlewares/seller'
 
 const router = express.Router()
 
-router.get('/', auth, seller, getOrders)
+router.get('/', auth, getOrders)
 router.post('/checkout', auth, checkout)
 router.put('/update-status/:id', auth, seller, updateOrderStatus)
 
