@@ -6,22 +6,24 @@ import { PayloadType } from '../utils/types'
 import jwt from 'jsonwebtoken'
 
 async function login(req: Request, res: Response) {
-  const { usernameOrEmail, password } = req.body
-  if (!usernameOrEmail || !password)
+  const { phoneOrEmail, password } = req.body
+  if (!phoneOrEmail || !password)
     return res.status(400).json({ error: "All fields are required" })
 
-  const userExists = await pool.query("SELECT * FROM users WHERE username = $1 OR email = $1", [usernameOrEmail]);
+  const userExists = await pool.query("SELECT * FROM users WHERE phone = $1 OR email = $1", [phoneOrEmail]);
   if (userExists.rowCount === 0)
-    return res.status(400).json({ error: "Incorrect email or password" });
+    return res.status(400).json({ error: "Incorrect credentials" });
 
   const correctPassword = bcrypt.compareSync(password, userExists.rows[0].password);
   if (!correctPassword)
-    return res.status(400).json({ error: "Incorrect email or password" });
+    return res.status(400).json({ error: "Incorrect credentials" });
 
   try {
+    const fullName = `${userExists.rows[0].first_name} ${userExists.rows[0].last_name}` 
+
     const payload: PayloadType = {
       id: userExists.rows[0].user_id,
-      username: userExists.rows[0].username
+      fullName
     }
 
     const access = getAccessToken(payload)
@@ -38,14 +40,11 @@ async function login(req: Request, res: Response) {
 }
 
 async function signup(req: Request, res: Response) {
-  const { username, email, password } = req.body
-  if (!username || !email || !password)
+  const { phone, email, password, firstName, lastName } = req.body
+  if (!phone || !email || !password || !firstName || !lastName)
     return res.status(400).json({ error: "All fields are required" })
 
-  if (username.length < 3 || username.length > 20)
-    return res.status(400).json({ error: "Username length must be 3 to 20" })
-
-  const userExists = await pool.query("SELECT username, email FROM users WHERE username = $1 OR email = $2", [username, email]);
+  const userExists = await pool.query("SELECT phone, email FROM users WHERE phone = $1 OR email = $2", [phone, email]);
   if (userExists.rowCount !== 0)
     return res.status(400).json({ error: "User already exists" });
 
@@ -53,11 +52,12 @@ async function signup(req: Request, res: Response) {
   const hashedPassword = bcrypt.hashSync(password, salt);
 
   try {
-    const newUser = await pool.query("INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *", [username, email, hashedPassword]);
+    const newUser = await pool.query("INSERT INTO users (phone, email, password, first_name, last_name) VALUES ($1, $2, $3, $4, $5) RETURNING *", [phone, email, hashedPassword, firstName, lastName]);
+    const fullName = `${newUser.rows[0].first_name} ${newUser.rows[0].last_name}` 
 
     const payload: PayloadType = {
       id: newUser.rows[0].user_id,
-      username: newUser.rows[0].username
+      fullName
     }
 
     const access = getAccessToken(payload)
@@ -111,7 +111,7 @@ async function getNewAccessToken(req: Request, res: Response) {
 
     const user: PayloadType = {
       id: req.user.id,
-      username: req.user.username
+      fullName: req.user.fullName
     }
 
     const access = getAccessToken(user)
@@ -123,11 +123,48 @@ async function getNewAccessToken(req: Request, res: Response) {
 }
 
 async function setUserAsSeller(req: Request, res: Response) {
-  const { id, seller } = req.user
-  const userToUpdate = await pool.query('UPDATE users SET seller = $1 WHERE user_id = $2', [!seller, id])
-  if (userToUpdate.rowCount === 0)
-    return res.sendStatus(404)
-  res.sendStatus(204)
+  const { id } = req.user
+  try {
+    const isUserSeller = await pool.query('SELECT seller FROM users WHERE user_id = $1', [id])
+    await pool.query('UPDATE users SET seller = $1 WHERE user_id = $2', [!isUserSeller.rows[0].seller, id])
+    res.sendStatus(204)
+  } catch (error) {
+    if (error instanceof Error)
+      res.status(500).json({ error: error.message })
+  }
+}
+
+async function updateUserInfo(req: Request, res: Response) {
+  const { firstName, lastName, houseNumber, street, barangay, city, province } = req.body
+  const { id } = req.user
+
+  if (!firstName || !lastName || !houseNumber || !street || !barangay || !city || !province)
+    return res.status(400).json({ error: 'All fields are required' })
+
+  try {
+    await pool.query('UPDATE users SET first_name = $1, last_name = $2 WHERE user_id = $3', [firstName, lastName, id])
+    await pool.query('UPDATE address SET house_num = $1, street = $2, barangay = $3, city = $4, province = $5 WHERE user_id = $6', [houseNumber, street, barangay, city, province, id])
+    res.sendStatus(204)
+  } catch (error) {
+    if (error instanceof Error)
+      res.status(500).json({ error: error.message })
+  }
+}
+
+async function setUserAddress(req: Request, res: Response) {
+  const { houseNumber, street, barangay, city, province } = req.body
+  const { id } = req.user
+
+  if (!houseNumber || !street || !barangay || !city || !province)
+    return res.status(400).json({ error: 'All fields are required' })
+
+  try {
+    await pool.query('INSERT INTO address (house_num, street, barangay, city, province, user_id) VALUES ($1, $2, $3, $4, $5, $6)', [houseNumber, street, barangay, city, province, id])
+    res.sendStatus(200)
+  } catch (error) {
+    if (error instanceof Error)
+      res.status(500).json({ error: error.message })
+  }
 }
 
 export {
@@ -137,4 +174,6 @@ export {
   deleteUser,
   getNewAccessToken,
   setUserAsSeller,
+  updateUserInfo,
+  setUserAddress,
 }

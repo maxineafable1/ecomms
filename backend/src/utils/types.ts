@@ -1,6 +1,6 @@
 type PayloadType = {
   id: string
-  username: string
+  fullName: string
 }
 
 interface OrderStatusType {
