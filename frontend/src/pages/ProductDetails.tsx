@@ -5,10 +5,14 @@ import { FaMinus, FaPlus } from "react-icons/fa";
 export default function ProductDetails() {
   return (
     <>
-      <div className='flex bg-white'>
-        <div className='flex p-4 gap-4'>
-          <img src={laptop} alt="" className='block aspect-square object-cover max-w-64' />
-          <div className='flex flex-col'>
+      <div className='flex-col lg:flex-row flex bg-white'>
+        <div className='flex-col md:flex-row flex p-4 gap-4'>
+          <img 
+            src={laptop} 
+            alt="" 
+            className='block aspect-square object-cover md:max-w-64'
+          />
+          <div className='flex-1 flex flex-col'>
             <h2 className='text-xl'>Panasony DS18 Portable Handheld Mini Fan</h2>
             <div className='w-full h-0.5 bg-gray-200 my-4'></div>
             <p className='text-orange-500 text-3xl '>₱69.00</p>
