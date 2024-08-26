@@ -6,7 +6,20 @@ type TokensType = {
   refresh: string
 }
 
+type UserType = {
+  created_at: string
+  updated_at: string
+  first_name: string | null
+  last_name: string | null
+  phone: string
+  email: string
+  seller: boolean
+  store_name: string | null
+  user_id: string
+}
+
 type UserContextType = {
+  user: UserType | null
   tokens: TokensType | null
   login: (e: React.FormEvent<HTMLFormElement>, form: LoginFormType) => void
   signup: (e: React.FormEvent<HTMLFormElement>, form: SignupFormType) => void
@@ -14,6 +27,7 @@ type UserContextType = {
 }
 
 const initialUserContext: UserContextType = {
+  user: null,
   tokens: null,
   login: () => { },
   signup: () => { },
@@ -27,6 +41,7 @@ type UserProviderProps = {
 }
 
 export function UserProvider({ children }: UserProviderProps) {
+  const [user, setUser] = useState<UserType | null>(null)
   const [tokens, setTokens] = useState<TokensType | null>(() => {
     const storageTokens = localStorage.getItem('tokens')
     return storageTokens ? JSON.parse(storageTokens) : null
@@ -68,6 +83,8 @@ export function UserProvider({ children }: UserProviderProps) {
       if (!res.ok) {
         throw new Error(data.error);
       }
+      setTokens(data)
+      localStorage.setItem('tokens', JSON.stringify(data))
       console.log(data)
     } catch (error) {
       console.log(error)
@@ -127,7 +144,38 @@ export function UserProvider({ children }: UserProviderProps) {
     return () => clearInterval(intervalId)
   }, [tokens?.refresh])
 
+
+  useEffect(() => {
+    if (!tokens) return
+    const abortController = new AbortController()
+    async function displayUser() {
+      try {
+        const res = await fetch('/api/users/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens?.access}`
+          },
+          signal: abortController.signal
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data);
+        }
+        console.log(data)
+        setUser(data)
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    displayUser()
+    return () => {
+      abortController.abort()
+    }
+  }, [tokens])
+
   const contextValue = {
+    user,
     tokens,
     login,
     signup,

@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
   }
 })
 
-const upload = multer({
+export const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase()
@@ -25,14 +25,15 @@ const upload = multer({
   limits: {
     fileSize: MAX_FILE_SIZE
   }
-}).single('file')
+})
+// .single('file')
 
-export function imageUpload(_: any, res: Response, next: NextFunction) {
-  upload(_, res, (err) => {
-    if (err) {
-      res.status(500).json(err)
-    } else {
-      next()
-    }
-  })
-}
+// export function imageUpload(_: any, res: Response, next: NextFunction) {
+//   upload(_, res, (err) => {
+//     if (err) {
+//       res.status(500).json(err)
+//     } else {
+//       next()
+//     }
+//   })
+// }

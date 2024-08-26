@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { pool } from '../database'
 import fs from 'fs'
+import path from 'path'
 
 async function getProducts(req: Request, res: Response) {
   try {
@@ -35,19 +36,19 @@ async function getProduct(req: Request, res: Response) {
 
 async function createProduct(req: Request, res: Response) {
   const { title, description, price, stock, category } = req.body
-  const path = req.file?.path
+  const imageFileName = req.file?.filename
   const { id } = req.user
 
-  if (!title || !price || !stock || !path)
+  if (!title || !price || !stock || !imageFileName)
     return res.status(400).json({ error: 'All fields are required' })
 
   try {
-    const product = await pool.query('INSERT INTO products (title, description, price, stock, category, image_path, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [title, description, price, stock, category, path, id])
-
-    res.status(200).json(product.rows[0])
+    await pool.query('INSERT INTO products (title, description, price, stock, category, image_path, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7)', [title, description, price, stock, category, imageFileName, id])
+    const products = await pool.query('SELECT * FROM products')
+    res.status(200).json(products.rows)
   } catch (error) {
     if (error instanceof Error)
-      res.status(500).json(error.message)
+      res.status(400).json(error.message)
   }
 }
 
@@ -61,10 +62,11 @@ async function deleteProduct(req: Request, res: Response) {
       return res.status(404).json({ error: 'Product not found' })
 
     // delete the image file
-    const filepath = product.rows[0].image_path
+    const filepath = path.resolve('uploads', product.rows[0].image_path)
     fs.unlinkSync(filepath)
 
-    res.sendStatus(204)
+    const products = await pool.query('SELECT * FROM products')
+    res.status(200).json(products.rows)
   } catch (error) {
     if (error instanceof Error)
       res.status(500).json(error.message)
@@ -72,12 +74,12 @@ async function deleteProduct(req: Request, res: Response) {
 }
 
 async function updateProduct(req: Request, res: Response) {
-  const { title, description, price, stock, category } = req.body
-  const path = req.file?.path
+  const { title, description = '', price, stock, category = '' } = req.body
+  let imageFileName = req.file?.filename
   const { id: userId } = req.user
   const { id: productId } = req.params
 
-  if (!title || !description || !price || !stock || !category || !path)
+  if (!title || !price || !stock)
     return res.status(400).json({ error: 'All fields are required' })
 
   // get the current product image to delete the file
@@ -85,16 +87,23 @@ async function updateProduct(req: Request, res: Response) {
   if (productImage.rowCount === 0)
     return res.status(404).json({ error: 'Product not found' })
 
-  const filepath = productImage.rows[0].image_path
-  fs.unlinkSync(filepath)
+  // if the image is not updated use the current product image
+  if (!imageFileName)
+    imageFileName = productImage.rows[0].image_path
+  else {
+    // delete the current image then update with the new
+    const filepath = path.resolve('uploads', productImage.rows[0].image_path)
+    fs.unlinkSync(filepath)
+  }
 
   try {
-    const product = await pool.query('UPDATE products SET title = $1, description = $2, price = $3, stock = $4, category = $5, image_path = $6 WHERE product_id = $7 AND user_id = $8 RETURNING *', [title, description, price, stock, category, path, productId, userId])
+    const product = await pool.query('UPDATE products SET title = $1, description = $2, price = $3, stock = $4, category = $5, image_path = $6 WHERE product_id = $7 AND user_id = $8 RETURNING *', [title, description, price, stock, category, imageFileName, productId, userId])
 
     if (product.rowCount === 0)
       return res.status(404).json({ error: 'Product not found' })
 
-    res.sendStatus(204)
+    const products = await pool.query('SELECT * FROM products')
+    res.status(200).json(products.rows)
   } catch (error) {
     if (error instanceof Error)
       res.status(500).json(error.message)

@@ -19,11 +19,10 @@ async function login(req: Request, res: Response) {
     return res.status(400).json({ error: "Incorrect credentials" });
 
   try {
-    const fullName = `${userExists.rows[0].first_name} ${userExists.rows[0].last_name}` 
+    // const fullName = `${userExists.rows[0].first_name} ${userExists.rows[0].last_name}` 
 
     const payload: PayloadType = {
-      id: userExists.rows[0].user_id,
-      fullName
+      id: userExists.rows[0].user_id
     }
 
     const access = getAccessToken(payload)
@@ -40,8 +39,8 @@ async function login(req: Request, res: Response) {
 }
 
 async function signup(req: Request, res: Response) {
-  const { phone, email, password, firstName, lastName } = req.body
-  if (!phone || !email || !password || !firstName || !lastName)
+  const { phone, email, password } = req.body
+  if (!phone || !email || !password)
     return res.status(400).json({ error: "All fields are required" })
 
   const userExists = await pool.query("SELECT phone, email FROM users WHERE phone = $1 OR email = $2", [phone, email]);
@@ -52,12 +51,11 @@ async function signup(req: Request, res: Response) {
   const hashedPassword = bcrypt.hashSync(password, salt);
 
   try {
-    const newUser = await pool.query("INSERT INTO users (phone, email, password, first_name, last_name) VALUES ($1, $2, $3, $4, $5) RETURNING *", [phone, email, hashedPassword, firstName, lastName]);
-    const fullName = `${newUser.rows[0].first_name} ${newUser.rows[0].last_name}` 
+    const newUser = await pool.query("INSERT INTO users (phone, email, password) VALUES ($1, $2, $3) RETURNING *", [phone, email, hashedPassword]);
+    // const fullName = `${newUser.rows[0].first_name} ${newUser.rows[0].last_name}` 
 
     const payload: PayloadType = {
-      id: newUser.rows[0].user_id,
-      fullName
+      id: newUser.rows[0].user_id
     }
 
     const access = getAccessToken(payload)
@@ -78,7 +76,8 @@ async function logout(req: Request, res: Response) {
     const { refresh } = req.body
     if (!refresh)
       return res.status(400).json({ error: "Refresh token not found" });
-    await pool.query('UPDATE tokens SET refresh = NULL WHERE refresh = $1', [refresh])
+
+    await pool.query('DELETE FROM tokens WHERE refresh = $1', [refresh])
     res.sendStatus(204)
   } catch (error) {
     if (error instanceof Error)
@@ -110,8 +109,8 @@ async function getNewAccessToken(req: Request, res: Response) {
     req.user = decoded
 
     const user: PayloadType = {
-      id: req.user.id,
-      fullName: req.user.fullName
+      id: req.user.id
+      // fullName: req.user.fullName
     }
 
     const access = getAccessToken(user)
@@ -167,6 +166,36 @@ async function setUserAddress(req: Request, res: Response) {
   }
 }
 
+async function setStoreName(req: Request, res: Response) {
+  const { storeName } = req.body
+  const { id } = req.user
+
+  if (!storeName)
+    return res.status(400).json({ error: 'All fields are required' })
+
+  try {
+    await pool.query('UPDATE users SET store_name = $1 WHERE user_id = $2', [storeName, id])
+    res.sendStatus(200)
+  } catch (error) {
+    if (error instanceof Error)
+      res.status(500).json({ error: error.message })
+  }
+}
+
+async function getUserInfo(req: Request, res: Response) {
+  const { id } = req.user
+  try {
+    const user = await pool.query('SELECT * FROM users WHERE user_id = $1', [id])
+    if (user.rowCount === 0)
+      return res.sendStatus(404)
+
+    res.status(200).json(user.rows[0])
+  } catch (error) {
+    if (error instanceof Error)
+      res.status(500).json({ error: error.message })
+  }
+}
+
 export {
   login,
   signup,
@@ -176,4 +205,6 @@ export {
   setUserAsSeller,
   updateUserInfo,
   setUserAddress,
+  setStoreName,
+  getUserInfo,
 }

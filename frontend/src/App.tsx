@@ -3,13 +3,20 @@ import Layout from "./components/Layout"
 import Home from "./pages/Home"
 import ProductDetails from "./pages/ProductDetails"
 import Cart from "./pages/Cart"
+import Profile from "./pages/Profile"
+import PrivateRoutes from "./utilities/routes/PrivateRoutes"
+import NotFound from "./pages/NotFound"
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />}>
       <Route index element={<Home />} />
-      <Route path="products/:id" element={<ProductDetails />} />
+      <Route path="products/:id" element={<ProductDetails />} errorElement={<NotFound />} />
       <Route path="cart" element={<Cart />} />
+      <Route element={<PrivateRoutes />}>
+        <Route path='/profile' element={<Profile />} />
+      </Route>
+      <Route path='*' element={<NotFound />} />
     </Route>
   )
 )
