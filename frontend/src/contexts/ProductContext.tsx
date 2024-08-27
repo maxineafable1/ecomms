@@ -4,15 +4,14 @@ import { ProductFormType } from "../components/products/ProductForm";
 
 export type ProductType = {
   category: string
-  created_at: string
   description: string
   image_path: string
   price: string
   product_id: number
+  user_id: string
   stock: string
   title: string
-  updated_at: string
-  user_id: string
+  store_name: string
 }
 
 type ProductContextType = {
@@ -129,7 +128,6 @@ export function ProductProvider({ children }: ProductProviderProps) {
         if (!res.ok) {
           throw new Error(data);
         }
-        console.log(data)
         setProducts(data)
       } catch (error) {
         console.log(error)

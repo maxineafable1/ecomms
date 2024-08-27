@@ -23,7 +23,7 @@ async function getProduct(req: Request, res: Response) {
   try {
     const { id } = req.params
 
-    const product = await pool.query('SELECT * FROM products WHERE product_id = $1', [id])
+    const product = await pool.query('SELECT p.product_id, p.title, p.category, p.description, p.price, p.stock, p.image_path, p.user_id, u.store_name FROM products p INNER JOIN users u USING (user_id) WHERE product_id = $1', [id])
     if (product.rowCount === 0)
       return res.status(404).json({ error: 'Product not found' })
 

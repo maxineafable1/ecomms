@@ -123,7 +123,6 @@ export function UserProvider({ children }: UserProviderProps) {
       }
       setTokens({ ...tokens, access: data.access })
       localStorage.setItem('tokens', JSON.stringify({ access: data.access, refresh: tokens.refresh }))
-      console.log(data)
     } catch (error) {
       console.log(error)
     }
@@ -162,7 +161,6 @@ export function UserProvider({ children }: UserProviderProps) {
         if (!res.ok) {
           throw new Error(data);
         }
-        console.log(data)
         setUser(data)
       } catch (error) {
         console.log(error)

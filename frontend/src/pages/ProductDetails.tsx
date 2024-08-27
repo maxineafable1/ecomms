@@ -6,6 +6,9 @@ import { jwtDecode } from "jwt-decode";
 import { useUserContext } from '../contexts/UserContext';
 import useDialog from '../hooks/useDialog';
 import ProductForm from '../components/products/ProductForm';
+import { useCartContext } from '../contexts/CartContext';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface MyToken {
   id: string
@@ -22,6 +25,8 @@ export default function ProductDetails() {
   const [productUpdated, setProductUpdated] = useState(false)
   const navigate = useNavigate()
   const { id } = useParams()
+
+  const { addToCart } = useCartContext() 
 
   function handleQuantity(e: React.ChangeEvent<HTMLInputElement>) {
     if (!product) return
@@ -125,7 +130,16 @@ export default function ProductDetails() {
               ) : (
                 <>
                   <button className='bg-yellow-400 flex-1 py-1 rounded'>Buy Now</button>
-                  <button className='bg-orange-400 flex-1 py-1 rounded'>Add to Cart</button>
+                  <button 
+                    className='bg-orange-400 flex-1 py-1 rounded'
+                    onClick={() => {
+                      addToCart(product?.product_id as number, quantity)
+                      toast.success('Added to cart')
+                    }}
+                  >
+                    Add to Cart
+                  </button>
+                  <ToastContainer autoClose={1500} position='top-left' />
                 </>
               )}
             </div>
@@ -134,7 +148,7 @@ export default function ProductDetails() {
         </div>
         <div className='flex flex-col flex-1 bg-slate-100 p-4'>
           <p className='text-xs text-gray-500'>Sold by</p>
-          <p>Seller Name</p>
+          <p>{product?.store_name}</p>
           <Link to='/' className='mt-auto text-blue-400'>Go to Store</Link>
         </div>
       </div>
