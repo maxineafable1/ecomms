@@ -6,6 +6,7 @@ import Cart from "./pages/Cart"
 import Profile from "./pages/Profile"
 import PrivateRoutes from "./utilities/routes/PrivateRoutes"
 import NotFound from "./pages/NotFound"
+import UserEditForm from "./pages/UserEditForm"
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -15,6 +16,7 @@ const router = createBrowserRouter(
       <Route path="cart" element={<Cart />} />
       <Route element={<PrivateRoutes />}>
         <Route path='/profile' element={<Profile />} />
+        <Route path="/edit-user" element={<UserEditForm />} />
       </Route>
       <Route path='*' element={<NotFound />} />
     </Route>

@@ -1,9 +1,18 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { LoginFormType, SignupFormType } from "../components/UserForm";
+import { UserEditFormType } from "../pages/UserEditForm";
 
 type TokensType = {
   access: string
   refresh: string
+}
+
+type UserAddress = {
+  house_num: string
+  street: string
+  barangay: string
+  city: string
+  province: string
 }
 
 type UserType = {
@@ -14,9 +23,9 @@ type UserType = {
   phone: string
   email: string
   seller: boolean
-  store_name: string | null
+  store_name: string
   user_id: string
-}
+} & UserAddress
 
 type UserContextType = {
   user: UserType | null
@@ -24,6 +33,8 @@ type UserContextType = {
   login: (e: React.FormEvent<HTMLFormElement>, form: LoginFormType) => void
   signup: (e: React.FormEvent<HTMLFormElement>, form: SignupFormType) => void
   logout: () => void
+  setUserStoreName: (e: React.FormEvent<HTMLFormElement>, storeName: string) => void
+  updateUserInfo: (e: React.FormEvent<HTMLFormElement>, form: UserEditFormType) => void
 }
 
 const initialUserContext: UserContextType = {
@@ -32,6 +43,8 @@ const initialUserContext: UserContextType = {
   login: () => { },
   signup: () => { },
   logout: () => { },
+  setUserStoreName: () => { },
+  updateUserInfo: () => { },
 }
 
 const UserContext = createContext(initialUserContext)
@@ -128,21 +141,49 @@ export function UserProvider({ children }: UserProviderProps) {
     }
   }
 
-  useEffect(() => {
-    if (tokens?.refresh)
-      getNewAccessToken()
-  }, [tokens?.refresh])
+  async function setUserStoreName(e: React.FormEvent<HTMLFormElement>, storeName: string) {
+    e.preventDefault()
+    try {
+      const res = await fetch(`/api/users/update-seller`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens?.access}`
+        },
+        body: JSON.stringify({ storeName })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error);
+      }
+      console.log(data)
+      setUser(data)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
-  useEffect(() => {
-    const minute = 1000 * 60
-    const intervalId = setInterval(() => {
-      if (tokens?.refresh)
-        getNewAccessToken()
-    }, 4 * minute)
-
-    return () => clearInterval(intervalId)
-  }, [tokens?.refresh])
-
+  async function updateUserInfo(e: React.FormEvent<HTMLFormElement>, form: UserEditFormType) {
+    e.preventDefault()
+    try {
+      const res = await fetch(`/api/users/update-info`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens?.access}`
+        },
+        body: JSON.stringify(form)
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error);
+      }
+      console.log(data)
+      setUser(data)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   useEffect(() => {
     if (!tokens) return
@@ -161,6 +202,7 @@ export function UserProvider({ children }: UserProviderProps) {
         if (!res.ok) {
           throw new Error(data);
         }
+        console.log(data)
         setUser(data)
       } catch (error) {
         console.log(error)
@@ -172,12 +214,29 @@ export function UserProvider({ children }: UserProviderProps) {
     }
   }, [tokens])
 
+  useEffect(() => {
+    if (tokens?.refresh)
+      getNewAccessToken()
+  }, [tokens?.refresh])
+
+  useEffect(() => {
+    const minute = 1000 * 60
+    const intervalId = setInterval(() => {
+      if (tokens?.refresh)
+        getNewAccessToken()
+    }, 4 * minute)
+
+    return () => clearInterval(intervalId)
+  }, [tokens?.refresh])
+
   const contextValue = {
     user,
     tokens,
     login,
     signup,
     logout,
+    setUserStoreName,
+    updateUserInfo,
   }
 
   return (

@@ -15,7 +15,7 @@ type ProductFormProps = {
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
   isUpdate?: boolean
   product?: ProductType
-  setProductUpdated: React.Dispatch<React.SetStateAction<boolean>>
+  setProductUpdated?: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function ProductForm({ dialogRef, setIsOpen, product, isUpdate = false, setProductUpdated }: ProductFormProps) {
@@ -28,8 +28,6 @@ export default function ProductForm({ dialogRef, setIsOpen, product, isUpdate = 
     stock: isUpdate ? product?.stock : '',
     category: isUpdate ? product?.category : '',
   })
-
-  console.log(product)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -47,7 +45,7 @@ export default function ProductForm({ dialogRef, setIsOpen, product, isUpdate = 
           onSubmit={e => {
             if (isUpdate) {
               updateProduct(e, form, product?.product_id)
-              setProductUpdated(true)
+              setProductUpdated?.(true)
             }
             else
               createProduct(e, form)

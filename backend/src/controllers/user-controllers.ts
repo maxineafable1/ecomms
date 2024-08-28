@@ -123,10 +123,16 @@ async function getNewAccessToken(req: Request, res: Response) {
 
 async function setUserAsSeller(req: Request, res: Response) {
   const { id } = req.user
+  const { storeName } = req.body
+
+  if (!storeName)
+    return res.status(400).json({ error: 'All fields are required' })
+
   try {
     const isUserSeller = await pool.query('SELECT seller FROM users WHERE user_id = $1', [id])
-    await pool.query('UPDATE users SET seller = $1 WHERE user_id = $2', [!isUserSeller.rows[0].seller, id])
-    res.sendStatus(204)
+    await pool.query('UPDATE users SET seller = $1, store_name = $2 WHERE user_id = $3', [!isUserSeller.rows[0].seller, storeName, id])
+    // res.sendStatus(204)
+    getUserInfo(req, res)
   } catch (error) {
     if (error instanceof Error)
       res.status(500).json({ error: error.message })
@@ -143,39 +149,8 @@ async function updateUserInfo(req: Request, res: Response) {
   try {
     await pool.query('UPDATE users SET first_name = $1, last_name = $2 WHERE user_id = $3', [firstName, lastName, id])
     await pool.query('UPDATE address SET house_num = $1, street = $2, barangay = $3, city = $4, province = $5 WHERE user_id = $6', [houseNumber, street, barangay, city, province, id])
-    res.sendStatus(204)
-  } catch (error) {
-    if (error instanceof Error)
-      res.status(500).json({ error: error.message })
-  }
-}
-
-async function setUserAddress(req: Request, res: Response) {
-  const { houseNumber, street, barangay, city, province } = req.body
-  const { id } = req.user
-
-  if (!houseNumber || !street || !barangay || !city || !province)
-    return res.status(400).json({ error: 'All fields are required' })
-
-  try {
-    await pool.query('INSERT INTO address (house_num, street, barangay, city, province, user_id) VALUES ($1, $2, $3, $4, $5, $6)', [houseNumber, street, barangay, city, province, id])
-    res.sendStatus(200)
-  } catch (error) {
-    if (error instanceof Error)
-      res.status(500).json({ error: error.message })
-  }
-}
-
-async function setStoreName(req: Request, res: Response) {
-  const { storeName } = req.body
-  const { id } = req.user
-
-  if (!storeName)
-    return res.status(400).json({ error: 'All fields are required' })
-
-  try {
-    await pool.query('UPDATE users SET store_name = $1 WHERE user_id = $2', [storeName, id])
-    res.sendStatus(200)
+    // res.sendStatus(204)
+    getUserInfo(req, res)
   } catch (error) {
     if (error instanceof Error)
       res.status(500).json({ error: error.message })
@@ -185,7 +160,7 @@ async function setStoreName(req: Request, res: Response) {
 async function getUserInfo(req: Request, res: Response) {
   const { id } = req.user
   try {
-    const user = await pool.query('SELECT * FROM users WHERE user_id = $1', [id])
+    const user = await pool.query('SELECT * FROM users LEFT JOIN address USING (user_id) WHERE user_id = $1', [id])
     if (user.rowCount === 0)
       return res.sendStatus(404)
 
@@ -204,7 +179,5 @@ export {
   getNewAccessToken,
   setUserAsSeller,
   updateUserInfo,
-  setUserAddress,
-  setStoreName,
   getUserInfo,
 }
